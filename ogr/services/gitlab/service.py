@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from typing import Optional, List
 import logging
 from typing import Optional
 
@@ -27,7 +28,7 @@ import gitlab
 from ogr.abstract import GitUser
 from ogr.exceptions import GitlabAPIException
 from ogr.factory import use_for_service
-from ogr.services.base import BaseGitService
+from ogr.services.base import BaseGitService, GitProject
 from ogr.services.gitlab.project import GitlabProject
 from ogr.services.gitlab.user import GitlabUser
 
@@ -128,3 +129,31 @@ class GitlabService(BaseGitService):
         return GitlabProject(
             repo=repo, namespace=namespace, service=self, gitlab_repo=new_project
         )
+
+    def list_projects(
+        self,
+        namespace: str = None,
+        user: str = None,
+        search_pattern: str = None,
+        language: str = None,
+    ) -> List[GitProject]:
+
+        if namespace:
+            group = self.gitlab_instance.groups.get(namespace)
+            projects = group.projects.list()
+        if user:
+            u = self.gitlab_instance.users.list(username=user)[0]
+            projects = u.projects.list()
+
+        gitlab_projects: List[GitProject]
+        gitlab_projects = [
+            GitlabProject(
+                repo=project.attributes["path"],
+                namespace=project.attributes["namespace"]["full_path"],
+                gitlab_repo=project,
+                service=self,
+            )
+            for project in projects
+        ]
+
+        return gitlab_projects
