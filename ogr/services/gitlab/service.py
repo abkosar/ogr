@@ -140,20 +140,39 @@ class GitlabService(BaseGitService):
 
         if namespace:
             group = self.gitlab_instance.groups.get(namespace)
-            projects = group.projects.list()
+            projects = group.projects.list(all=True)
         if user:
             u = self.gitlab_instance.users.list(username=user)[0]
-            projects = u.projects.list()
+            projects = u.projects.list(all=True)
 
         gitlab_projects: List[GitProject]
-        gitlab_projects = [
-            GitlabProject(
-                repo=project.attributes["path"],
-                namespace=project.attributes["namespace"]["full_path"],
-                gitlab_repo=project,
-                service=self,
-            )
-            for project in projects
-        ]
+
+        if language:
+            # group.projects.list gives us a GroupProject instance
+            # in order to be able to filter by language we need Project instance
+            projects_filterable_by_language = [self.gitlab_instance.projects.get(item.attributes['id'])
+                                               for item in projects]
+
+            gitlab_projects = [
+                GitlabProject(
+                    repo=project.attributes["path"],
+                    namespace=project.attributes["namespace"]["full_path"],
+                    gitlab_repo=project,
+                    service=self,
+                )
+                for project in projects_filterable_by_language
+                if language in project.languages().keys() # projects.languages() returns a dict
+            ]
+
+        else:
+            gitlab_projects = [
+                GitlabProject(
+                    repo=project.attributes["path"],
+                    namespace=project.attributes["namespace"]["full_path"],
+                    gitlab_repo=project,
+                    service=self,
+                )
+                for project in projects
+            ]
 
         return gitlab_projects

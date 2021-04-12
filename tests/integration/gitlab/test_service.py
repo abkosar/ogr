@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from gitlab import GitlabGetError
 from requre.online_replacing import record_requests_for_all_methods
@@ -87,3 +89,24 @@ class Service(GitlabTests):
         service = GitlabService()
         assert service.gitlab_instance
         assert service.get_project(namespace="gnachman", repo="iterm2").exists()
+
+    def test_list_projects_with_namespace_input(self):
+        service = GitlabService(os.environ['GITLAB_TOKEN'])
+        name_of_the_repo = "inkscape"
+        number_of_projects = 10
+        projects = service.list_projects(namespace=name_of_the_repo)
+        assert len(projects) == number_of_projects
+
+    def test_list_projects_with_namespace_language_input(self):
+        service = GitlabService(os.environ['GITLAB_TOKEN'])
+        name_of_the_repo = "inkscape"
+        language="C++"
+        number_of_projects = 2
+
+        projects = service.list_projects(
+            namespace=name_of_the_repo,
+            language=language
+        )
+
+        assert len(projects) == number_of_projects
+
