@@ -1,7 +1,11 @@
+import os
+
 from github import GithubException, UnknownObjectException
 from requre.online_replacing import record_requests_for_all_methods
 
 from tests.integration.github.base import GithubTests
+
+from ogr import GithubService
 
 
 @record_requests_for_all_methods()
@@ -79,3 +83,18 @@ class Service(GithubTests):
             repo=name_of_the_repo, namespace=namespace_of_the_repo
         )
         assert project.github_repo
+
+    def test_list_projects_with_user_input(self):
+        user = "packit"
+        service = GithubService(token=os.environ["GITHUB_TOKEN"])
+        projects = service.list_projects(user=user)
+        assert len(projects) == 26
+        assert set(p.namespace for p in projects) == {'packit'}
+
+    def test_list_projects_with_user_language_input(self):
+        user = "packit"
+        language = "python"
+        service = GithubService(token=os.environ["GITHUB_TOKEN"])
+        projects = service.list_projects(user=user, language=language)
+        assert len(projects) == 15
+        assert set(p.namespace for p in projects) == {'packit'}
